@@ -1,0 +1,35 @@
+
+{
+    "schema": {
+        "fields": [
+            {
+                "name": "index",
+                "type": "integer"
+            },
+            {
+                "name": "name",
+                "type": "string"
+            },
+            {
+                "name": "version_gha",
+                "type": "string"
+            }
+        ],
+        "primaryKey": [
+            "index"
+        ],
+        "pandas_version": "0.20.0"
+    },
+    "data": [
+        {
+            "index": 0,
+            "name": "conda",
+            "version_gha": ""
+        }
+        ,{
+            "index": 1,
+            "name": "conda-package-handling",
+            "version_gha": ""
+        }
+    ]
+}
