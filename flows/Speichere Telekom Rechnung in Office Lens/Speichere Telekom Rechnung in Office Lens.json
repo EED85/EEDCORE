@@ -1,0 +1,319 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "logicAppName": {
+            "type": "String",
+            "metadata": {
+                "description": "Name of the logic app."
+            }
+        },
+        "logicAppLocation": {
+            "defaultValue": "[resourceGroup().location]",
+            "allowedValues": [
+                "eastasia",
+                "southeastasia",
+                "centralus",
+                "eastus",
+                "eastus2",
+                "westus",
+                "northcentralus",
+                "southcentralus",
+                "northeurope",
+                "westeurope",
+                "japanwest",
+                "japaneast",
+                "brazilsouth",
+                "australiaeast",
+                "australiasoutheast",
+                "southindia",
+                "centralindia",
+                "westindia",
+                "canadacentral",
+                "canadaeast",
+                "uaecentral",
+                "westcentralus",
+                "westus2",
+                "[resourceGroup().location]"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Location of the logic app."
+            }
+        },
+        "outlook_Connection_Name": {
+            "defaultValue": "outlook",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the connection."
+            }
+        },
+        "onedriveforbusiness_Connection_Name": {
+            "defaultValue": "onedriveforbusiness",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the connection."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2016-06-01",
+            "name": "[parameters('logicAppName')]",
+            "location": "[parameters('logicAppLocation')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/connections', parameters('outlook_Connection_Name'))]",
+                "[resourceId('Microsoft.Web/connections', parameters('onedriveforbusiness_Connection_Name'))]"
+            ],
+            "properties": {
+                "state": "Disabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "$authentication": {
+                            "defaultValue": {},
+                            "type": "SecureObject"
+                        }
+                    },
+                    "triggers": {
+                        "When_a_new_email_arrives": {
+                            "splitOn": "@triggerBody()?['value']",
+                            "metadata": {
+                                "Id::AQMkADAwATNiZmYAZC1kZABlNi1iMWZiLTAwAi0wMAoALgAAA8YyZl9DfohFt2e9z0fTN6gBALBBtOZ_PwpCgYhRhCE18fMAAAAPsiGOAAAA": "Telekom",
+                                "flowSystemMetadata": {
+                                    "swaggerOperationId": "OnNewEmailV2"
+                                },
+                                "operationMetadataId": "6f01025f-6bd6-418d-87b8-2372331e30e0"
+                            },
+                            "type": "ApiConnectionNotification",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['outlook']['connectionId']"
+                                    }
+                                },
+                                "fetch": {
+                                    "queries": {
+                                        "folderPath": "Id::AQMkADAwATNiZmYAZC1kZABlNi1iMWZiLTAwAi0wMAoALgAAA8YyZl9DfohFt2e9z0fTN6gBALBBtOZ_PwpCgYhRhCE18fMAAAAPsiGOAAAA",
+                                        "importance": "Any",
+                                        "fetchOnlyWithAttachment": true,
+                                        "includeAttachments": true
+                                    },
+                                    "pathTemplate": {
+                                        "template": "/v2/Mail/OnNewEmail"
+                                    },
+                                    "method": "get"
+                                },
+                                "subscribe": {
+                                    "queries": {
+                                        "folderPath": "Id::AQMkADAwATNiZmYAZC1kZABlNi1iMWZiLTAwAi0wMAoALgAAA8YyZl9DfohFt2e9z0fTN6gBALBBtOZ_PwpCgYhRhCE18fMAAAAPsiGOAAAA",
+                                        "importance": "Any",
+                                        "fetchOnlyWithAttachment": true
+                                    },
+                                    "body": {
+                                        "NotificationUrl": "@{listCallbackUrl()}"
+                                    },
+                                    "pathTemplate": {
+                                        "template": "/MailSubscriptionPoke/$subscriptions"
+                                    },
+                                    "method": "post"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Apply_to_each": {
+                            "foreach": "@triggerBody()?['Attachments']",
+                            "actions": {
+                                "Get_attachment": {
+                                    "runAfter": {},
+                                    "metadata": {
+                                        "flowSystemMetadata": {
+                                            "swaggerOperationId": "GetAttachment"
+                                        },
+                                        "operationMetadataId": "e12036d3-4d3c-4532-9756-68f3ccbdab80"
+                                    },
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['outlook']['connectionId']"
+                                            }
+                                        },
+                                        "method": "get",
+                                        "path": "/Mail/@{encodeURIComponent(triggerBody()?['Id'])}/Attachments/@{encodeURIComponent(items('Apply_to_each')?['Id'])}",
+                                        "authentication": "@parameters('$authentication')"
+                                    }
+                                },
+                                "Create_file": {
+                                    "runAfter": {
+                                        "Get_attachment": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "metadata": {
+                                        "flowSystemMetadata": {
+                                            "swaggerOperationId": "CreateFile"
+                                        },
+                                        "operationMetadataId": "15e98af2-a84d-445d-8788-23ade686569b"
+                                    },
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['onedriveforbusiness']['connectionId']"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "body": "@base64ToBinary(items('Apply_to_each')?['ContentBytes'])",
+                                        "path": "/datasets/default/files",
+                                        "queries": {
+                                            "folderPath": "/Office Lens",
+                                            "name": "@items('Apply_to_each')?['Name']"
+                                        },
+                                        "authentication": "@parameters('$authentication')"
+                                    },
+                                    "runtimeConfiguration": {
+                                        "contentTransfer": {
+                                            "transferMode": "Chunked"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter": {},
+                            "metadata": {
+                                "operationMetadataId": "257d7c41-f00e-4160-8d87-2105ea6a3893"
+                            },
+                            "type": "Foreach"
+                        },
+                        "Flag_email": {
+                            "runAfter": {
+                                "Mark_as_read": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "metadata": {
+                                "flowSystemMetadata": {
+                                    "swaggerOperationId": "Flag"
+                                },
+                                "operationMetadataId": "4dc0a057-124d-4b56-860e-9dfb28a5b8ef"
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['outlook']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "path": "/Mail/Flag/@{encodeURIComponent(triggerBody()?['Id'])}",
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        },
+                        "Mark_as_read": {
+                            "runAfter": {
+                                "Apply_to_each": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "metadata": {
+                                "flowSystemMetadata": {
+                                    "swaggerOperationId": "MarkAsRead"
+                                },
+                                "operationMetadataId": "111c5e26-1b04-4a9d-955a-aede7e321796"
+                            },
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['outlook']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "path": "/Mail/MarkAsRead/@{encodeURIComponent(triggerBody()?['Id'])}",
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "outlook": {
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'outlook')]",
+                                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('outlook_Connection_Name'))]",
+                                "connectionName": "[parameters('outlook_Connection_Name')]"
+                            },
+                            "onedriveforbusiness": {
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'onedriveforbusiness')]",
+                                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('onedriveforbusiness_Connection_Name'))]",
+                                "connectionName": "[parameters('onedriveforbusiness_Connection_Name')]"
+                            }
+                        }
+                    }
+                },
+                "runtimeConfiguration": {
+                    "lifetime": {
+                        "unit": "Day",
+                        "count": 30
+                    },
+                    "collections": {
+                        "maximumItemCount": 5000
+                    },
+                    "performanceProfile": {
+                        "throttles": {
+                            "mode": "Low"
+                        }
+                    },
+                    "retryPolicy": {
+                        "type": "Exponential",
+                        "interval": "PT5M",
+                        "count": 2,
+                        "minimumInterval": "PT5M",
+                        "maximumInterval": "PT1H"
+                    },
+                    "usageConfiguration": {
+                        "name": "USER-2AEA0A7707C9413F98E153A7DD9A9A13"
+                    }
+                },
+                "integrationAccount": {
+                    "name": "ee9525e97c284842b70a5661650f7759-westus",
+                    "id": "subscriptions/de199c31-4f16-4099-87e6-0b5042c8bada/resourceGroups/ee9525e97c284842b70a5661650f7759-ia/providers/Microsoft.Logic/integrationAccounts/ee9525e97c284842b70a5661650f7759-westus",
+                    "type": "Microsoft.Logic/integrationAccounts"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/connections",
+            "apiVersion": "2016-06-01",
+            "name": "[parameters('outlook_Connection_Name')]",
+            "location": "[parameters('logicAppLocation')]",
+            "properties": {
+                "api": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'outlook')]"
+                },
+                "displayName": "[parameters('outlook_Connection_Name')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/connections",
+            "apiVersion": "2016-06-01",
+            "name": "[parameters('onedriveforbusiness_Connection_Name')]",
+            "location": "[parameters('logicAppLocation')]",
+            "properties": {
+                "api": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'onedriveforbusiness')]"
+                },
+                "displayName": "[parameters('onedriveforbusiness_Connection_Name')]"
+            }
+        }
+    ]
+}
